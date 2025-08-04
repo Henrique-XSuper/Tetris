@@ -1,0 +1,355 @@
+<script>
+    // Obtém a referência para o elemento de áudio da música de fundo.
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    // Define o volume da música para 30%.
+    backgroundMusic.volume = 0.3;
+    // Tenta tocar a música. Se falhar (ex: navegador bloqueia autoplay), adiciona um listener.
+    backgroundMusic.play().catch(() => {
+        // Adiciona um listener para tocar a música na primeira vez que uma tecla for pressionada.
+        window.addEventListener('keydown', () => {
+            backgroundMusic.play();
+        }, { once: true }); // '{ once: true }' garante que o listener seja removido após o primeiro evento.
+    });
+
+    // Obtém as referências para os elementos canvas e seus contextos de desenho 2D.
+    const canvas = document.getElementById('tetrisCanvas');
+    const ctx = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('nextPieceCanvas');
+    const nextCtx = nextCanvas.getContext('2d');
+    // Obtém as referências para os elementos HTML de pontuação e "GAME OVER".
+    const scoreDisplay = document.getElementById('score');
+    const gameOverDisplay = document.getElementById('game-over');
+
+    // Define as dimensões do tabuleiro de Tetris (linhas e colunas).
+    const ROWS = 20;
+    const COLS = 10;
+    // Define o tamanho de cada bloco em pixels.
+    const BLOCK_SIZE = 30;
+
+    // Inicializa o tabuleiro como uma matriz 2D preenchida com zeros (representando espaços vazios).
+    let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    // Inicializa a pontuação do jogo.
+    let score = 0;
+    // Variável booleana para controlar o estado do jogo (se terminou ou não).
+    let isGameOver = false;
+
+    // Cores das peças de Tetris, ajustadas para um estilo retrô neon.
+    const colors = [
+        '#00ffff', /* Ciano */
+        '#0099ff', /* Azul elétrico */
+        '#ff9900', /* Laranja vívido */
+        '#ffff00', /* Amarelo clássico */
+        '#00ff00', /* Verde lima */
+        '#ff00ff', /* Magenta */
+        '#ff3300'  /* Vermelho vibrante */
+    ];
+
+    // Definições das formas das peças de Tetris, representadas como matrizes 2D.
+    const shapes = [
+        [[1, 1, 1, 1]],           // Peça "I"
+        [[1, 0, 0], [1, 1, 1]],   // Peça "J"
+        [[0, 0, 1], [1, 1, 1]],   // Peça "L"
+        [[1, 1], [1, 1]],         // Peça "O"
+        [[0, 1, 1], [1, 1, 0]],   // Peça "S"
+        [[0, 1, 0], [1, 1, 1]],   // Peça "T"
+        [[1, 1, 0], [0, 1, 1]]    // Peça "Z"
+    ];
+
+    // Variáveis para armazenar a peça atual e a próxima peça.
+    let currentPiece, nextPiece;
+    // Variáveis para as coordenadas (x, y) da peça atual no tabuleiro.
+    let currentPieceX, currentPieceY;
+
+    // Função para gerar uma peça de Tetris aleatória.
+    function getRandomPiece() {
+        // Seleciona um índice de forma aleatoriamente.
+        const shapeIndex = Math.floor(Math.random() * shapes.length);
+        // Retorna um objeto contendo a forma e a cor correspondente.
+        return {
+            shape: shapes[shapeIndex],
+            color: colors[shapeIndex]
+        };
+    }
+
+    // Função para iniciar um novo jogo.
+    function newGame() {
+        // Reinicia o tabuleiro, preenchendo-o com zeros.
+        board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        // Zera a pontuação.
+        score = 0;
+        // Reseta o estado de "game over".
+        isGameOver = false;
+        // Oculta a mensagem de "game over".
+        gameOverDisplay.style.display = 'none';
+        // Atualiza a exibição da pontuação para 0.
+        scoreDisplay.textContent = '0';
+        // Gera a primeira próxima peça.
+        nextPiece = getRandomPiece();
+        // Spawna a primeira peça no tabuleiro.
+        spawnPiece();
+    }
+
+    // Função para "spawna" (gerar) uma nova peça no topo do tabuleiro.
+    function spawnPiece() {
+        // A próxima peça se torna a peça atual.
+        currentPiece = nextPiece;
+        // Gera uma nova "próxima peça".
+        nextPiece = getRandomPiece();
+        // Define a posição inicial X da peça (centralizada no topo).
+        currentPieceX = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
+        // Define a posição inicial Y da peça (topo do tabuleiro).
+        currentPieceY = 0;
+
+        // Verifica se a nova peça colide imediatamente (indicando game over).
+        if (checkCollision(currentPiece.shape, currentPieceX, currentPieceY)) {
+            // Define o estado do jogo como "game over".
+            isGameOver = true;
+            // Exibe a mensagem de "game over".
+            gameOverDisplay.style.display = 'block';
+            // Pausa a música de fundo.
+            backgroundMusic.pause();
+        }
+        // Desenha a próxima peça no painel lateral.
+        drawNextPiece();
+    }
+
+    // Função para desenhar um único bloco no canvas.
+    function drawBlock(x, y, color, context, size) {
+        // Se a cor for 0, significa que o bloco está vazio, então não desenha nada.
+        if (color === 0) return;
+        // Define a cor de preenchimento do bloco.
+        context.fillStyle = color;
+        // Define a cor para a sombra (para o efeito neon).
+        context.shadowColor = color;
+        // Define o nível de desfoque da sombra.
+        context.shadowBlur = 10;
+        // Desenha o retângulo preenchido que representa o bloco.
+        context.fillRect(x * size, y * size, size, size);
+        // Reseta o desfoque da sombra para não afetar desenhos posteriores.
+        context.shadowBlur = 0;
+        // Define a cor da borda do bloco como preta para destaque.
+        context.strokeStyle = 'black';
+        // Define a largura da borda.
+        context.lineWidth = 2;
+        // Desenha o contorno do retângulo.
+        context.strokeRect(x * size, y * size, size, size);
+    }
+
+    // Função para desenhar todo o tabuleiro.
+    function drawBoard() {
+        // Limpa todo o canvas do tabuleiro.
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Itera sobre cada célula do tabuleiro.
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                // Desenha cada bloco com base no valor armazenado na matriz 'board'.
+                drawBlock(x, y, board[y][x], ctx, BLOCK_SIZE);
+            }
+        }
+    }
+
+    // Função para desenhar a peça atual em sua posição.
+    function drawPiece() {
+        // Itera sobre cada linha e coluna da forma da peça atual.
+        currentPiece.shape.forEach((row, y) => {
+            row.forEach((value, x) => {
+                // Se o valor for 1 (representa um bloco da peça), desenha-o.
+                if (value) {
+                    drawBlock(currentPieceX + x, currentPieceY + y, currentPiece.color, ctx, BLOCK_SIZE);
+                }
+            });
+        });
+    }
+
+    // Função para desenhar a próxima peça no painel lateral.
+    function drawNextPiece() {
+        // Limpa o canvas da próxima peça.
+        nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+        const shape = nextPiece.shape;
+        // Calcula a posição inicial para centralizar a próxima peça no canvas.
+        const startX = (nextCanvas.width / BLOCK_SIZE - shape[0].length) / 2;
+        const startY = (nextCanvas.height / BLOCK_SIZE - shape.length) / 2;
+        // Itera sobre a forma da próxima peça e desenha seus blocos.
+        shape.forEach((row, y) => {
+            row.forEach((value, x) => {
+                if (value) {
+                    drawBlock(startX + x, startY + y, nextPiece.color, nextCtx, BLOCK_SIZE);
+                }
+            });
+        });
+    }
+
+    // Função para verificar se uma peça colide com as bordas do tabuleiro ou com outras peças já assentadas.
+    function checkCollision(pieceShape, x, y) {
+        // Itera sobre a forma da peça.
+        for (let row = 0; row < pieceShape.length; row++) {
+            for (let col = 0; col < pieceShape[row].length; col++) {
+                // Verifica se a célula atual da peça existe (valor 1) E se há colisão:
+                // - Fora da borda esquerda (x + col < 0)
+                // - Fora da borda direita (x + col >= COLS)
+                // - Fora da borda inferior (y + row >= ROWS)
+                // - Com um bloco já existente no tabuleiro (board[y + row] && board[y + row][x + col])
+                if (pieceShape[row][col] &&
+                    (x + col < 0 || x + col >= COLS || y + row >= ROWS || (board[y + row] && board[y + row][x + col]))) {
+                    return true; // Colisão detectada.
+                }
+            }
+        }
+        return false; // Nenhuma colisão.
+    }
+
+    // Função para "fundir" (merge) a peça atual com o tabuleiro quando ela atinge o fundo ou outra peça.
+    function mergePiece() {
+        // Itera sobre a forma da peça atual.
+        currentPiece.shape.forEach((row, y) => {
+            row.forEach((value, x) => {
+                // Se o valor for 1, significa que é um bloco da peça.
+                if (value) {
+                    // Copia a cor do bloco para a posição correspondente no tabuleiro.
+                    board[currentPieceY + y][currentPieceX + x] = currentPiece.color;
+                }
+            });
+        });
+        // Verifica se alguma linha foi completada.
+        checkLines();
+        // Spawna uma nova peça.
+        spawnPiece();
+    }
+
+    // Função para verificar e limpar linhas completas no tabuleiro.
+    function checkLines() {
+        let linesCleared = 0; // Contador de linhas limpas.
+        // Itera de baixo para cima no tabuleiro.
+        for (let y = ROWS - 1; y >= 0; y--) {
+            // Verifica se a linha atual está completamente preenchida (nenhuma célula é 0).
+            if (board[y].every(cell => cell !== 0)) {
+                // Remove a linha completa do tabuleiro.
+                board.splice(y, 1);
+                // Adiciona uma nova linha vazia no topo do tabuleiro.
+                board.unshift(Array(COLS).fill(0));
+                // Incrementa o contador de linhas limpas.
+                linesCleared++;
+                // Incrementa 'y' para verificar a mesma nova linha (que agora desceu) na próxima iteração.
+                y++;
+            }
+        }
+        // Se alguma linha foi limpa, atualiza a pontuação.
+        if (linesCleared > 0) {
+            score += linesCleared * 100; // Cada linha vale 100 pontos.
+            scoreDisplay.textContent = score; // Atualiza a exibição da pontuação.
+        }
+    }
+
+    // Função para rotacionar a peça atual.
+    function rotatePiece() {
+        const originalShape = currentPiece.shape; // Guarda a forma original antes de rotacionar.
+        // Cria uma nova forma rotacionada 90 graus no sentido horário.
+        // Isso é feito transpondo a matriz e revertendo as linhas.
+        const newShape = originalShape[0].map((_, colIndex) => originalShape.map(row => row[colIndex]).reverse());
+        
+        // Tenta rotacionar a peça na posição atual. Se não houver colisão, aplica a rotação.
+        if (!checkCollision(newShape, currentPieceX, currentPieceY)) {
+            currentPiece.shape = newShape;
+        } else {
+            // Se houver colisão, tenta "chutar" a peça para os lados para ver se ela se encaixa.
+            for (let i = 1; i <= newShape[0].length; i++) {
+                // Tenta mover para a direita.
+                if (!checkCollision(newShape, currentPieceX + i, currentPieceY)) {
+                    currentPiece.shape = newShape;
+                    currentPieceX += i;
+                    return; // Rotação bem-sucedida com ajuste.
+                }
+                // Tenta mover para a esquerda.
+                if (!checkCollision(newShape, currentPieceX - i, currentPieceY)) {
+                    currentPiece.shape = newShape;
+                    currentPieceX -= i;
+                    return; // Rotação bem-sucedida com ajuste.
+                }
+            }
+        }
+    }
+
+    let dropCounter = 0; // Contador para controlar o tempo de queda da peça.
+    let dropInterval = 1000; // Intervalo de tempo (em ms) para a peça cair um bloco (1 segundo).
+    let lastTime = 0; // Armazena o tempo da última chamada do loop do jogo.
+
+    // Função principal do loop do jogo.
+    function gameLoop(time = 0) {
+        // Se o jogo acabou, para o loop.
+        if (isGameOver) return;
+        // Calcula o tempo decorrido desde a última atualização.
+        const deltaTime = time - lastTime;
+        // Atualiza o lastTime para a próxima iteração.
+        lastTime = time;
+
+        // Adiciona o tempo decorrido ao dropCounter.
+        dropCounter += deltaTime;
+        // Se o dropCounter exceder o dropInterval, a peça deve cair.
+        if (dropCounter > dropInterval) {
+            currentPieceY++; // Move a peça um bloco para baixo.
+            // Verifica se houve colisão após a queda.
+            if (checkCollision(currentPiece.shape, currentPieceX, currentPieceY)) {
+                currentPieceY--; // Volta a peça para a posição anterior (sem colisão).
+                mergePiece();    // Funde a peça com o tabuleiro.
+            }
+            dropCounter = 0; // Reinicia o contador de queda.
+        }
+
+        drawBoard(); // Desenha o tabuleiro atualizado.
+        drawPiece(); // Desenha a peça atual.
+        // Solicita ao navegador para chamar o gameLoop novamente na próxima frame de animação.
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Adiciona um listener para eventos de teclado.
+    document.addEventListener('keydown', (e) => {
+        // Se o jogo acabou:
+        if (isGameOver) {
+            // Verifica se a tecla 'R' (ou 'r') foi pressionada para reiniciar.
+            if (e.key === 'r' || e.key === 'R') {
+                newGame(); // Inicia um novo jogo.
+                backgroundMusic.currentTime = 0; // Reinicia a música.
+                backgroundMusic.play(); // Toca a música.
+                gameLoop(); // Reinicia o loop do jogo.
+            }
+            return; // Sai da função se o jogo estiver acabado e não for um reinício.
+        }
+
+        // Movimento da peça para a esquerda.
+        if (e.key === 'ArrowLeft') {
+            // Se não houver colisão ao mover para a esquerda, move a peça.
+            if (!checkCollision(currentPiece.shape, currentPieceX - 1, currentPieceY)) {
+                currentPieceX--;
+            }
+        // Movimento da peça para a direita.
+        } else if (e.key === 'ArrowRight') {
+            // Se não houver colisão ao mover para a direita, move a peça.
+            if (!checkCollision(currentPiece.shape, currentPieceX + 1, currentPieceY)) {
+                currentPieceX++;
+            }
+        // Queda rápida da peça (um bloco por vez).
+        } else if (e.key === 'ArrowDown') {
+            currentPieceY++; // Move a peça para baixo.
+            // Se houver colisão após a queda, move de volta e funde a peça.
+            if (checkCollision(currentPiece.shape, currentPieceX, currentPieceY)) {
+                currentPieceY--;
+                mergePiece();
+            }
+        // Rotação da peça.
+        } else if (e.key === 'ArrowUp') {
+            rotatePiece(); // Chama a função de rotação.
+        // Hard drop (queda instantânea da peça).
+        } else if (e.key === ' ') { // Barra de espaço
+            // Move a peça para baixo até que colida.
+            while (!checkCollision(currentPiece.shape, currentPieceX, currentPieceY + 1)) {
+                currentPieceY++;
+            }
+            mergePiece(); // Funde a peça com o tabuleiro.
+        }
+    });
+
+    // Inicia um novo jogo quando o script é carregado.
+    newGame();
+    // Inicia o loop principal do jogo.
+    gameLoop();
+</script>

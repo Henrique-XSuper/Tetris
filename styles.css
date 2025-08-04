@@ -1,0 +1,310 @@
+     /* * Estilos Globais e de Fundo
+         * Define o fundo gradiente com cores vibrantes para o efeito neon
+         * Centraliza o conteúdo e define a fonte padrão
+         */
+     body {
+         /* Define um fundo gradiente linear para o corpo da página, criando um efeito visual escuro e vibrante,
+               que serve como base para o tema neon. As cores são escolhidas para dar profundidade e um brilho sutil. */
+         background: linear-gradient(135deg, #0a081c, #2b2c4f, #1e1e3b);
+         /* Usa Flexbox para centralizar todo o conteúdo da página (o canvas e as telas de UI) vertical e horizontalmente. */
+         display: flex;
+         justify-content: center;
+         /* Centraliza horizontalmente */
+         align-items: center;
+         /* Centraliza verticalmente */
+         height: 100vh;
+         /* Define a altura do corpo como 100% da altura da viewport, garantindo que o fundo cubra toda a tela. */
+         color: #e0f7fa;
+         /* Define a cor padrão do texto para um tom claro de ciano/azul, que contrasta bem com o fundo escuro. */
+         font-family: 'Press Start 2P', cursive;
+         /* Aplica a fonte pixel-art importada. 'cursive' é um fallback genérico. */
+         overflow: hidden;
+         /* Evita que barras de rolagem apareçam, mesmo se o conteúdo exceder as dimensões da tela. */
+         margin: 0;
+         /* Remove a margem padrão do body. */
+         cursor: crosshair;
+         /* Altera o cursor do mouse para um formato de mira, adequado para jogos. */
+     }
+
+     /*
+         * Estilos do Canvas do Jogo
+         * Adiciona uma borda neon e uma sombra para destacá-lo
+         * O fundo semi-transparente permite que o gradiente do body apareça sutilmente
+         */
+     canvas {
+         /* Adiciona uma borda sólida de 3px com cor ciano neon. */
+         border: 3px solid #00e5ff;
+         /* Cria um efeito de brilho neon ao redor do canvas.
+               São duas sombras: uma mais próxima e intensa, e outra mais espalhada e suave. */
+         box-shadow: 0 0 25px #00e5ffe6, 0 0 50px #00e5ff80;
+         /* Define o fundo do canvas como preto semi-transparente, permitindo que o gradiente do body apareça por trás. */
+         background-color: #000000b3;
+         /* Adiciona uma transição suave para todas as propriedades CSS que mudarem,
+               o que pode ser útil para efeitos futuros (ex: hover, estados de jogo). */
+         transition: all 0.3s ease-in-out;
+     }
+
+     /*
+         * Painel de UI (Pontuação e Vidas)
+         * Posicionado no canto superior esquerdo, com estilo neon
+         */
+     .ui-panel {
+         position: absolute;
+         /* Permite posicionar o painel em relação ao body. */
+         top: 25px;
+         /* Posiciona 25px do topo. */
+         left: 25px;
+         /* Posiciona 25px da esquerda. */
+         background-color: #00000099;
+         /* Fundo preto semi-transparente. */
+         border: 2px solid #00e5ff;
+         /* Borda ciano neon. */
+         padding: 15px 20px;
+         /* Espaçamento interno. */
+         border-radius: 8px;
+         /* Bordas levemente arredondadas. */
+         text-align: center;
+         /* Centraliza o texto dentro do painel. */
+         width: 250px;
+         /* Largura fixa do painel. */
+         /* Sombra externa e brilho interno para o efeito neon. */
+         box-shadow: 0 0 12px #00e5ff, inset 0 0 5px #00e5ff;
+         font-size: 1.1em;
+         /* Tamanho da fonte relativo. */
+         text-transform: uppercase;
+         /* Converte todo o texto para maiúsculas. */
+         letter-spacing: 1px;
+         /* Espaçamento entre as letras. */
+         display: flex;
+         /* Usa Flexbox para organizar os elementos internos (pontuação e vidas). */
+         flex-direction: column;
+         /* Organiza os itens em coluna. */
+         gap: 10px;
+         /* Espaçamento entre os itens flex. */
+     }
+
+     /*
+ * Estilo da Pontuação e Vidas
+ * Grande, negrito e com brilho neon
+ */
+     #score-display,
+     #lives-display {
+         font-size: 28px;
+         /* Tamanho da fonte maior para pontuação e vidas. */
+         font-weight: bold;
+         /* Texto em negrito. */
+         color: #e0f7fa;
+         /* Cor do texto. */
+         /* Brilho neon mais forte para o texto, com múltiplas camadas de sombra. */
+         text-shadow: 0 0 8px #00e5ff, 0 0 15px #00ffff;
+         /* Aplica uma animação de "pulsar" que faz o brilho do texto variar. */
+         animation: pulse 1.5s infinite alternate;
+     }
+
+     /*
+         * Animação de Pulsar para a Pontuação e Vidas
+         */
+     @keyframes pulse {
+         from {
+             /* Estado inicial da sombra do texto. */
+             text-shadow: 0 0 8px #00e5ff, 0 0 15px #00ffff;
+         }
+
+         to {
+             /* Estado final da sombra do texto, mais intenso, criando o efeito de pulsar. */
+             text-shadow: 0 0 12px #00e5ff, 0 0 20px #00ffff, 0 0 25px #00ffff80;
+         }
+     }
+
+     /*
+         * Estilos da Tela de Game Over
+         * Centralizada, com texto grande e chamativo, e um brilho vermelho neon
+         */
+     #game-over {
+         position: absolute;
+         /* Posiciona a tela de Game Over em relação ao body. */
+         top: 50%;
+         /* Posiciona o topo do elemento no meio da tela. */
+         left: 50%;
+         /* Posiciona a esquerda do elemento no meio da tela. */
+         transform: translate(-50%, -50%);
+         /* Centraliza o elemento exatamente no centro da tela. */
+         font-size: 60px;
+         /* Tamanho da fonte grande para "GAME OVER". */
+         font-weight: bold;
+         /* Texto em negrito. */
+         color: #ffffff;
+         /* Cor vibrante de magenta/vermelho para o texto. */
+         /* Brilho neon vermelho intenso para o texto. */
+         text-shadow: 0 0 15px #ff007f, 0 0 25px #ff007fb3;
+         display: none;
+         /* Escondido por padrão; será exibido via JavaScript quando o jogo terminar. */
+         text-align: center;
+         /* Centraliza o texto dentro do elemento. */
+         line-height: 1.2;
+         /* Espaçamento entre as linhas do texto. */
+         text-transform: uppercase;
+         /* Converte o texto para maiúsculas. */
+         animation: neonGlow 1s infinite alternate;
+         /* Aplica uma animação de brilho neon. */
+         z-index: 10;
+         /* Garante que esta tela fique acima do canvas do jogo. */
+     }
+
+     /*
+         * Animação de Brilho Neon para Game Over
+         */
+     @keyframes neonGlow {
+         from {
+             /* Estado inicial do brilho, mais sutil. */
+             text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #ff007f;
+         }
+
+         to {
+             /* Estado final do brilho, mais intenso e espalhado, criando o efeito de pulsação neon. */
+             text-shadow: 0 0 20px #ff007f, 0 0 40px #ff007f, 0 0 50px #ff007f, 0 0 60px #ff007fcc;
+         }
+     }
+
+     /*
+         * Estilo para a mensagem de Reiniciar dentro da tela de Game Over
+         */
+     #game-over small {
+         font-size: 24px;
+         /* Tamanho da fonte menor para a instrução de reiniciar. */
+         color: #e0f7fa;
+         /* Cor mais clara para o texto. */
+         text-shadow: 0 0 5px #00e5ff;
+         /* Brilho azul neon sutil. */
+         display: block;
+         /* Garante que o texto fique em uma nova linha. */
+         margin-top: 15px;
+         /* Espaçamento superior. */
+     }
+
+     /* Estilo para a tela de início do jogo */
+     #start-screen {
+         position: absolute;
+         /* Posiciona a tela de início em relação ao body. */
+         top: 0;
+         /* Alinha ao topo. */
+         left: 0;
+         /* Alinha à esquerda. */
+         width: 100%;
+         /* Ocupa toda a largura. */
+         height: 100%;
+         /* Ocupa toda a altura. */
+         background-color: #000000e6;
+         /* Fundo preto quase opaco. */
+         display: flex;
+         /* Usa Flexbox para centralizar o conteúdo. */
+         flex-direction: column;
+         /* Organiza os itens em coluna. */
+         justify-content: center;
+         /* Centraliza verticalmente. */
+         align-items: center;
+         /* Centraliza horizontalmente. */
+         color: #e0f7fa;
+         /* Cor do texto. */
+         font-size: 2em;
+         /* Tamanho da fonte base. */
+         text-align: center;
+         /* Centraliza o texto. */
+         z-index: 20;
+         /* Garante que esta tela fique acima de todos os outros elementos. */
+     }
+
+     #start-screen h1 {
+         font-size: 3em;
+         /* Tamanho da fonte grande para o título do jogo. */
+         color: #00e5ff;
+         /* Cor ciano neon. */
+         /* Brilho neon para o título. */
+         text-shadow: 0 0 15px #00e5ff, 0 0 25px #00e5ffb3;
+         animation: neonGlow 1.5s infinite alternate;
+         /* Animação de brilho neon. */
+         margin-bottom: 30px;
+         /* Espaçamento abaixo do título. */
+     }
+
+     #start-screen button {
+         background-color: #00e5ff;
+         /* Cor de fundo do botão (ciano neon). */
+         color: #0a081c;
+         /* Cor do texto do botão (quase preto). */
+         border: 2px solid #00ffff;
+         /* Borda do botão. */
+         padding: 15px 30px;
+         /* Espaçamento interno do botão. */
+         font-family: 'Press Start 2P', cursive;
+         /* Fonte pixel-art. */
+         font-size: 1.2em;
+         /* Tamanho da fonte do botão. */
+         cursor: pointer;
+         /* Muda o cursor para indicar que é clicável. */
+         border-radius: 5px;
+         /* Bordas levemente arredondadas. */
+         /* Sombra e brilho para o botão. */
+         box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff80;
+         transition: all 0.3s ease;
+         /* Transição suave para efeitos de hover. */
+         text-transform: uppercase;
+         /* Texto em maiúsculas. */
+     }
+
+     #start-screen button:hover {
+         background-color: #00ffff;
+         /* Cor de fundo mais clara no hover. */
+         box-shadow: 0 0 15px #00ffff, 0 0 30px #00ffffb3;
+         transform: scale(1.05);
+         /* Aumenta ligeiramente o botão no hover. */
+     }
+
+     #start-screen p {
+         margin-top: 20px;
+         /* Espaçamento superior para as instruções. */
+         font-size: 0.9em;
+         /* Tamanho da fonte menor. */
+         color: #aaa;
+         /* Cor mais suave para as instruções. */
+     }
+
+     #pause-overlay {
+         position: absolute;
+         /* Posiciona a tela de pausa. */
+         top: 0;
+         /* Alinha ao topo. */
+         left: 0;
+         /* Alinha à esquerda. */
+         width: 100%;
+         /* Ocupa toda a largura. */
+         height: 100%;
+         /* Ocupa toda a altura. */
+         background-color: #000000b3;
+         /* Fundo preto semi-transparente. */
+         display: none;
+         /* Escondido por padrão; será exibido via JavaScript quando o jogo for pausado. */
+         flex-direction: column;
+         /* Organiza os itens em coluna. */
+         justify-content: center;
+         /* Centraliza verticalmente. */
+         align-items: center;
+         /* Centraliza horizontalmente. */
+         color: #e0f7fa;
+         /* Cor do texto. */
+         font-size: 2.5em;
+         /* Tamanho da fonte grande para "PAUSADO". */
+         text-shadow: 0 0 10px #00e5ff;
+         /* Brilho neon para o texto. */
+         z-index: 15;
+         /* Fica acima do canvas, mas abaixo das telas de início/game over. */
+     }
+
+     #pause-overlay small {
+         font-size: 0.5em;
+         /* Tamanho da fonte menor para a instrução de continuar. */
+         margin-top: 20px;
+         /* Espaçamento superior. */
+         color: #aaa;
+         /* Cor mais suave. */
+     }
