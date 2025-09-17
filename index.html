@@ -211,7 +211,11 @@
         }
         
         /* Ajustes responsivos */
-        @media (max-width: 480px) {
+        @media (max-width: 768px), (hover: none) {
+            .controls {
+                display: flex;
+            }
+            
             body {
                 padding: 5px;
             }
@@ -244,7 +248,7 @@
             }
         }
         
-        @media (max-height: 600px) {
+        @media (max-height: 600px) and (max-width: 768px) {
             .control-btn {
                 min-width: 40px;
                 min-height: 40px;
@@ -619,68 +623,134 @@
         requestAnimationFrame(gameLoop);
     }
 
-    // Event listeners para controles mobile
-    leftBtn.addEventListener('touchstart', (e) => {
+    // Variáveis para controle de gestos
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    let touchStartTime = 0;
+    let isTouchMoving = false;
+    let swipeThreshold = 50; // Distância mínima para ser considerado swipe
+    let tapThreshold = 200; // Tempo máximo para ser considerado tap (ms)
+
+    // Event listeners para gestos touch
+    canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        moveLeft();
-    });
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchStartTime = Date.now();
+        isTouchMoving = false;
+    }, { passive: false });
 
-    rightBtn.addEventListener('touchstart', (e) => {
+    canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        moveRight();
-    });
+        isTouchMoving = true;
+    }, { passive: false });
 
-    downBtn.addEventListener('touchstart', (e) => {
+    canvas.addEventListener('touchend', (e) => {
         e.preventDefault();
-        moveDown();
-    });
-
-    rotateBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        rotate();
-    });
-
-    dropBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        hardDrop();
-    });
-
-    // Suporte para clique do mouse também
-    leftBtn.addEventListener('click', moveLeft);
-    rightBtn.addEventListener('click', moveRight);
-    downBtn.addEventListener('click', moveDown);
-    rotateBtn.addEventListener('click', rotate);
-    dropBtn.addEventListener('click', hardDrop);
-
-    // Event listener para teclado (para desktops)
-    document.addEventListener('keydown', (e) => {
         if (isGameOver) {
-            if (e.key === 'r' || e.key === 'R') {
-                newGame();
-                gameLoop();
-            }
+            newGame();
+            gameLoop();
             return;
         }
 
-        switch(e.key) {
-            case 'ArrowLeft':
-                moveLeft();
-                break;
-            case 'ArrowRight':
+        const touch = e.changedTouches[0];
+        touchEndX = touch.clientX;
+        touchEndY = touch.clientY;
+        const touchDuration = Date.now() - touchStartTime;
+
+        // Se foi um tap rápido sem movimento, rotaciona
+        if (!isTouchMoving && touchDuration < tapThreshold) {
+            rotate();
+            return;
+        }
+
+        // Calcula a diferença de posição
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+
+        // Se o movimento foi muito pequeno, considera como tap
+        if (absDeltaX < swipeThreshold && absDeltaY < swipeThreshold) {
+            rotate();
+            return;
+        }
+
+        // Determina a direção do swipe
+        if (absDeltaX > absDeltaY) {
+            // Swipe horizontal
+            if (deltaX > 0) {
                 moveRight();
-                break;
-            case 'ArrowDown':
+            } else {
+                moveLeft();
+            }
+        } else {
+            // Swipe vertical
+            if (deltaY > 0) {
+                // Swipe para baixo
+                if (absDeltaY > swipeThreshold * 2) {
+                    // Swipe longo para baixo = hard drop
+                    hardDrop();
+                } else {
+                    // Swipe curto para baixo = soft drop
+                    moveDown();
+                }
+            }
+        }
+    }, { passive: false });
+
+    // Detecta dispositivos móveis para mostrar/esconder controles
+    function isMobileDevice() {
+        return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+    }
+
+    // Detecta se tem capacidade touch
+    function isTouchDevice() {
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
+
+    // Inicializa controles baseado no dispositivo
+    function initializeControls() {
+        const controlsElement = document.querySelector('.controls');
+        
+        if (isMobileDevice() || isTouchDevice()) {
+            // Event listeners para controles mobile quando necessário
+            leftBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveLeft();
+            });
+
+            rightBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                moveRight();
+            });
+
+            downBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
                 moveDown();
-                break;
-            case 'ArrowUp':
+            });
+
+            rotateBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
                 rotate();
-                break;
-            case ' ':
+            });
+
+            dropBtn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 hardDrop();
-                break;
+            });
+
+            // Suporte para clique do mouse também
+            leftBtn.addEventListener('click', moveLeft);
+            rightBtn.addEventListener('click', moveRight);
+            downBtn.addEventListener('click', moveDown);
+            rotateBtn.addEventListener('click', rotate);
+            dropBtn.addEventListener('click', hardDrop);
         }
-    });
+    }
 
     // Reiniciar jogo ao tocar em game over
     gameOverDisplay.addEventListener('touchstart', (e) => {
@@ -714,7 +784,38 @@
         lastTouchEnd = now;
     }, false);
 
+    // Event listener para teclado (para desktops)
+    document.addEventListener('keydown', (e) => {
+        if (isGameOver) {
+            if (e.key === 'r' || e.key === 'R') {
+                newGame();
+                gameLoop();
+            }
+            return;
+        }
+
+        switch(e.key) {
+            case 'ArrowLeft':
+                moveLeft();
+                break;
+            case 'ArrowRight':
+                moveRight();
+                break;
+            case 'ArrowDown':
+                moveDown();
+                break;
+            case 'ArrowUp':
+                rotate();
+                break;
+            case ' ':
+                e.preventDefault();
+                hardDrop();
+                break;
+        }
+    });
+
     // Inicia o jogo
+    initializeControls();
     newGame();
     gameLoop();
 </script>
